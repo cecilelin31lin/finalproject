@@ -10,6 +10,8 @@ import urllib.request as req
 #from bs4 import BeautifulSoup 都失敗ㄟ
 import bs4
 import os, time
+import jieba
+import jieba.analyse #看看沒有他可不可以用open
 import jieba.posseg as psg
 
 
@@ -21,22 +23,38 @@ def NOOB_crawling(url):
     txts=root.find("pre", id="SourceText")
     return txts
 
-with open(file="harry_potter_s1", mode="w", encoding="utf8") as file:
+
+jieba.load_userdict("userdict.txt")
+dict={}
+with open(file="harry_potter_s1_seg", mode="w", encoding="utf8") as file:
     for i in range(1,18):
         url="http://www.haodoo.net/?M=u&P=G1278:%d&L=book" %(i)
-        dict={}
-        for txt in NOOB_crawling(url): #時間複雜度會比 txts=NOOB_crawling for txt in txts高嗎?
-            file.write(txt)
+        for txt in NOOB_crawling(url):
             words=psg.cut(txt)
+            
+            stopwords=[]
+            for stopword in open(file="stopwords.txt", mode="r", encoding="utf-8"):
+                stopwords.append(stopword.strip())
+            
             for word in words:
-                if word.flag=="nr" and word.word in dict:
-                    dict[word.word]+=1
-                elif word.flag =="nr" and word.word not in dict:
-                    dict[word.word]=1
-    time.sleep(3)
-print(dict)
+                if word not in stopwords:
+                    file.write(" ".join(word))
+                    if word.flag=="nr" and word.word in dict: #posseg.pair才可以用.flag
+                        dict[word.word]+=1
+                    elif word.flag =="nr" and word.word not in dict:
+                        dict[word.word]=1        
+        time.sleep(3)
 
-#小結: jieba有失敗的斷詞，無法正確斷出人名
+names=list(dict.items())
+names_sorted=names.sort(key=lambda x:x[1], reverse=True)
+#print(names_sorted) #None?
+
+    
+
+        
+
+#小結: jieba有成功的斷詞，但無法正確斷出人名
+#     加自定義字典
 
 
 '''
@@ -45,7 +63,7 @@ with open(file="harry_potter_s1", mode="r", encoding="utf8") as file: #不是dec
 #Python3的str 默認不是bytes，所以不能decode，只能先encode轉為bytes，再decode
 #'builtin_function_or_method' object has no attribute 'decode' ????
     
-    txt=file.readlines #讀取每行，到底需不需要，因為文本中有的沒有分行
+    txt=file.readlines #讀取每行，到底需不需要，因為文本中有的沒有分行?
     words=psg.cut(txt) #cut_all=False 精確分析模式較適合文本分析
     for word in words:
         if word.flag=="nr" and word.word in dict:
@@ -53,7 +71,36 @@ with open(file="harry_potter_s1", mode="r", encoding="utf8") as file: #不是dec
         elif word.flag =="nr" and word.word not in dict:
                dict[word.word]=1
 print(dict)   
-'''            
+'''           
+'''
+def remove_stop_words(file_name,seg_list):
+  with open(file=file_name, mode='r', encoding="utf-8") as f:
+    stop_words = f.readlines()
+  stop_words = [stop_word.rstrip() for stop_word in stop_words]
+  
+  for seg in seg_list:
+    if seg not in stop_words:
+      new_list.append(seg) 
+  return new_list
+file_name = 'stopwords.txt'
+seg_list = remove_stop_words(file_name,seg_list)
+print('remove_stop_words: ',seg_list)
+
+
+stopwords=[]
+for word in open('stopwords.txt','r'):
+stopwords.append(word.strip())
+article=open('1.txt','r').read()
+words=jieba.cut(article,cut_all=False)
+stayed_line=""
+for word in words:
+if word.encode("utf-8")not in stopwords:
+stayed_line =word " "
+print stayed_line
+w=open('2.txt','w')
+w.write(stayed_line.encode('utf-8'))
+
+'''
     
                 
                 
